@@ -1,0 +1,27 @@
+- hosts: localhost 
+  become: true
+  
+  tasks:
+    - name: Docker Pull
+      docker_image:
+        name: "{{ item }}"
+        source: pull
+      with_items:
+        - centos/httpd
+        - nginx
+    - name: Create docker images
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        ports: "{{ item.ports }}"
+      with_items:
+        - { name: 'apache11', image: 'centos/httpd', ports: '8383:80' }   
+        - { name: 'apache22', image: 'centos/httpd', ports: '8484:80' }
+        - { name: 'nginx11', image: 'nginx', ports: '8989:80' }
+    - name: Copy files to docker
+      command: "{{ item }}" 
+      with_items:
+        - docker cp /home/vagrant/apache1/index.html apache11:/var/www/html/index.html
+        - docker cp /home/vagrant/apache2/index.html apache22:/var/www/html/index.html
+        - docker cp /home/vagrant/nginx/nginx.conf nginx11:/etc/nginx/nginx.conf
+        - docker exec nginx11 nginx -s reload
